@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Row, Col, Button, Input, Card, Space } from 'antd';
 import { callVariant } from '@/lib/services/api';
 import { Parameter } from '@/lib/Types';
+import { ExpandableInput } from '@/components/Playground/Views/ExpandableInput';
 
 interface TestViewProps {
     URIPath: string | null;
@@ -43,11 +44,13 @@ const BoxComponent: React.FC<TestViewProps> = ({ inputParams, optParams, URIPath
                     {Object.keys(inputParamsDict).map((key, index) => (
                         <div key={index}>
                             {/* <label>{key}</label> */}
-                            <TextArea
+                            <ExpandableInput value={key} onChange={(value) => handleInputParamValChange(key, value)}
+                            />
+                            {/* <TextArea
                                 placeholder={key}
                                 style={{ width: '100%', marginTop: 10, marginBottom: 10 }}
                                 onChange={e => handleInputParamValChange(key, e.target.value)}
-                            />
+                            /> */}
                         </div>))}
                     <Button onClick={handleRun} >Run</Button>
                 </Col>
