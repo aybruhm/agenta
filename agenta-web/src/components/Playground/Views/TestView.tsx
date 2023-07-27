@@ -1,4 +1,4 @@
-import React, {Dispatch, SetStateAction, useContext, useState} from "react"
+import React, {Dispatch, SetStateAction, useContext, useState, useEffect} from "react"
 import {Row, Col, Button, Input, Card, Modal} from "antd"
 import {CaretRightOutlined, PlusOutlined} from "@ant-design/icons"
 import {callVariant} from "@/lib/services/api"
@@ -118,9 +118,22 @@ const BoxComponent: React.FC<BoxComponentProps> = ({
 const App: React.FC<TestViewProps> = ({inputParams, optParams, URIPath}) => {
     const {testList, setTestList} = useContext(TestContext)
 
-    const handleAddRow = () => {
-        setTestList([...testList, {}])
-    }
+    useEffect(() => {
+        // Load test data from local storage if available when the component mounts
+        const storedTestData = localStorage.getItem("testData");
+        if (storedTestData) {
+          setTestList(JSON.parse(storedTestData));
+        }
+      }, [setTestList]);
+    
+      const handleAddRow = () => {
+        setTestList([...testList, {}]);
+      };
+    
+      useEffect(() => {
+        // Save test data to local storage whenever it changes
+        localStorage.setItem("testData", JSON.stringify(testList));
+      }, [testList]);
 
     return (
         <div>
