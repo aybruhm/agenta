@@ -37,7 +37,7 @@ jobs:
           cd agenta-web/ && npm install
       
       - name: Run Cypress
-        run: npm run cypress:run
+        run: cd agenta-web/ && npm run cypress:run
         env:
           NEXT_PUBLIC_OPENAI_API_KEY: ${{ secrets.NEXT_PUBLIC_OPENAI_API_KEY }}
       
