@@ -1,0 +1,51 @@
+name: Execute Frontend tests
+
+on: [pull_request]
+
+jobs:
+  cypress:
+    runs-on: ubuntu-latest
+    environment: oss
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v4
+
+      - name: Install Curl & Start Docker Compose
+        run: |
+          sudo apt install curl -y
+          docker-compose -f "docker-compose.yml" up -d --build
+
+      - name: Restart Backend Service To Fetch Template(s)
+        run: docker container restart agenta_backend_1
+        
+      - name: Wait for Backend Service
+        run: sudo bash ./wait_on_api.sh "profile/" "{\"id\":" 3
+
+      - name: Know the Response of Container Templates
+        run: curl http://localhost/api/containers/templates/
+
+      - name: Set Node.js 18
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: Cypress run
+        uses: cypress-io/github-action@v6
+        with:
+          browser: firefox
+          headed: false
+          wait-on: "http://localhost/apps"
+          config-file: ${{ github.workspace }}/agenta-web/cypress.config.ts
+          working-directory: agenta-web
+        
+        env:
+          NEXT_PUBLIC_OPENAI_API_KEY: ${{ secrets.NEXT_PUBLIC_OPENAI_API_KEY }}
+          # DEBUG: cypress:*
+        continue-on-error: true  # This allows the workflow to continue even if this step fails
+      - name: Docker logs
+        if: always()  #
+        run: docker ps -q | xargs -I {} docker logs {}
+        
+      - name: Stop Docker Compose
+        run: docker-compose down
