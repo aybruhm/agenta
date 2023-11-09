@@ -1,28 +1,50 @@
 name: Execute Frontend tests
 
-on: push
+on: [pull_request]
 
 jobs:
   cypress:
     runs-on: ubuntu-latest
+    environment: oss
+
     steps:
       - name: Check out code
         uses: actions/checkout@v4
 
-      - name: Start Docker Compose
-        run: docker-compose -f "docker-compose.yml" up -d --build
-
-      - name: Install dependencies
+      - name: Install Curl & Start Docker Compose
         run: |
-          cd ${{ github.workspace }}/agenta-web/
-          npm install
+          sudo apt install curl -y
+          docker-compose -f "docker-compose.yml" up -d --build
 
-      - name: Cypress run
-        uses: cypress-io/github-action@v6
+      - name: Restart Backend Service To Fetch Template(s)
+        run: docker container restart agenta_backend_1
+        
+      - name: Wait for Backend Service
+        run: sudo bash ./wait_on_api.sh "profile/" "{\"id\":" 3
+
+      - name: Know the Response of Organization & Container Templates
+        run: |
+          curl http://localhost/api/organizations/own/
+          curl http://localhost/api/containers/templates/
+
+      - name: Set Node.js 18
+        uses: actions/setup-node@v3
         with:
-          config-file: ${{ github.workspace }}/agenta-web/cypress.config.ts
-          working-directory: agenta-web
+          node-version: 18
 
-      - name: Stop server and database
-        run: docker-compose -f "docker-compose.yml" down
-        working-directory: ${{ github.workspace }}
+      - name: Install Frontend Depedencies
+        run: |
+          cd agenta-web/ && npm install
+      
+      - name: Run Cypress
+        run: npm run cypress:run
+        env:
+          NEXT_PUBLIC_OPENAI_API_KEY: ${{ secrets.NEXT_PUBLIC_OPENAI_API_KEY }}
+      
+      - name: Docker logs
+        if: always()  #
+        run: docker ps -q | xargs -I {} docker logs {}
+        
+      - name: Stop Docker Compose
+        run: |
+          cd .. && docker-compose down
