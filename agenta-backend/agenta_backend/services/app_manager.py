@@ -18,7 +18,7 @@ from agenta_backend.services import db_manager
 
 if os.environ["FEATURE_FLAG"] in ["cloud"]:
     from agenta_backend.ee.services import (
-        deployment_manager,
+        lambda_deployment_manager as deployment_manager,
     )  # noqa pylint: disable-all
 else:
     from agenta_backend.services import deployment_manager
@@ -182,9 +182,13 @@ async def terminate_and_remove_app_variant(
             logger.debug("is_last_variant_for_image {image}")
             if image:
                 logger.debug("_stop_and_delete_app_container")
-                deployment = await db_manager.get_deployment_by_objectid(
-                    app_variant_db.base.deployment
-                )
+                try:
+                    deployment = await db_manager.get_deployment_by_objectid(
+                        app_variant_db.base.deployment
+                    )
+                except Exception as e:
+                    logger.error(f"Failed to get deployment {e}")
+                    deployment = None
                 if deployment:
                     try:
                         await deployment_manager.stop_and_delete_service(deployment)
